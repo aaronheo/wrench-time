@@ -1,0 +1,106 @@
+import SwiftUI
+import SwiftData
+
+struct BikeListView: View {
+    @Query(sort: \Bike.isPrimary, order: .reverse) private var bikes: [Bike]
+    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var storeKit: StoreKitService
+
+    @State private var showAddBike = false
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if bikes.isEmpty {
+                    EmptyStateView(
+                        icon: "bicycle",
+                        title: "No Bikes",
+                        message: "Add your first bike to start tracking maintenance.",
+                        action: { showAddBike = true },
+                        actionLabel: "Add Bike"
+                    )
+                } else {
+                    List {
+                        ForEach(bikes) { bike in
+                            NavigationLink(value: bike) {
+                                BikeRowView(bike: bike)
+                            }
+                        }
+                        .onDelete(perform: deleteBikes)
+                    }
+                }
+            }
+            .navigationTitle("Bikes")
+            .navigationDestination(for: Bike.self) { bike in
+                BikeDetailView(bike: bike)
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showAddBike = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .disabled(!canAddBike)
+                }
+            }
+            .sheet(isPresented: $showAddBike) {
+                AddBikeView()
+            }
+        }
+    }
+
+    private var canAddBike: Bool {
+        storeKit.isPremium || bikes.count < 1
+    }
+
+    private func deleteBikes(at offsets: IndexSet) {
+        for index in offsets {
+            modelContext.delete(bikes[index])
+        }
+    }
+}
+
+// MARK: - Bike Row
+
+private struct BikeRowView: View {
+    let bike: Bike
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(bike.name)
+                        .font(.headline)
+                    if bike.isPrimary {
+                        Image(systemName: "star.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                }
+
+                if !bike.brandName.isEmpty {
+                    Text(bike.brandName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(bike.totalDistanceMiles.formattedMiles)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                let dueCount = bike.dueComponents.count
+                if dueCount > 0 {
+                    Text("\(dueCount) alert\(dueCount == 1 ? "" : "s")")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
