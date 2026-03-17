@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF8C00"/>
+      <stop offset="100%" stop-color="#E55B00"/>
+    </linearGradient>
+    <linearGradient id="gearGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#F0E8E0" stop-opacity="0.90"/>
+    </linearGradient>
+    <linearGradient id="wrenchGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3A3A3C"/>
+      <stop offset="100%" stop-color="#1C1C1E"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#00000040"/>
+    </filter>
+    <clipPath id="iosClip">
+      <rect width="1024" height="1024" rx="224" ry="224"/>
+    </clipPath>
+  </defs>
+
+  <!-- iOS rounded rectangle background -->
+  <g clip-path="url(#iosClip)">
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+
+    <!-- Subtle radial highlight -->
+    <circle cx="400" cy="350" r="500" fill="white" opacity="0.08"/>
+
+    <!-- Gear/Cog -->
+    <g transform="translate(512, 500)" filter="url(#shadow)">
+      <!-- Gear teeth (12 teeth) -->
+      <g fill="url(#gearGrad)">
+        <rect x="-32" y="-280" width="64" height="80" rx="12"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(30)"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(60)"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(90)"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(120)"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(150)"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(180)"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(210)"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(240)"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(270)"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(300)"/>
+        <rect x="-32" y="-280" width="64" height="80" rx="12" transform="rotate(330)"/>
+
+        <!-- Gear body -->
+        <circle cx="0" cy="0" r="245" fill="url(#gearGrad)"/>
+      </g>
+
+      <!-- Gear inner ring -->
+      <circle cx="0" cy="0" r="190" fill="none" stroke="#E55B00" stroke-width="8" opacity="0.3"/>
+
+      <!-- Gear center hole -->
+      <circle cx="0" cy="0" r="80" fill="url(#bg)"/>
+      <circle cx="0" cy="0" r="65" fill="none" stroke="white" stroke-width="4" opacity="0.3"/>
+
+      <!-- Small holes in gear (like a bike chainring) -->
+      <circle cx="0" cy="-140" r="20" fill="url(#bg)" opacity="0.6"/>
+      <circle cx="121" cy="70" r="20" fill="url(#bg)" opacity="0.6"/>
+      <circle cx="-121" cy="70" r="20" fill="url(#bg)" opacity="0.6"/>
+      <circle cx="70" cy="-121" r="16" fill="url(#bg)" opacity="0.4"/>
+      <circle cx="-70" cy="-121" r="16" fill="url(#bg)" opacity="0.4"/>
+      <circle cx="140" cy="0" r="16" fill="url(#bg)" opacity="0.4"/>
+      <circle cx="-140" cy="0" r="16" fill="url(#bg)" opacity="0.4"/>
+      <circle cx="70" cy="121" r="16" fill="url(#bg)" opacity="0.4"/>
+      <circle cx="-70" cy="121" r="16" fill="url(#bg)" opacity="0.4"/>
+      <circle cx="0" cy="140" r="20" fill="url(#bg)" opacity="0.6"/>
+    </g>
+
+    <!-- Wrench overlaid diagonally -->
+    <g transform="translate(512, 500) rotate(-45)" filter="url(#shadow)">
+      <!-- Wrench shaft -->
+      <rect x="-28" y="-220" width="56" height="340" rx="28" fill="url(#wrenchGrad)"/>
+
+      <!-- Wrench head (open-end) top -->
+      <g transform="translate(0, -230)">
+        <path d="M-60,-80 C-60,-130 -35,-160 0,-160 C35,-160 60,-130 60,-80 L40,-80 C40,-115 25,-135 0,-135 C-25,-135 -40,-115 -40,-80 Z"
+              fill="url(#wrenchGrad)"/>
+        <rect x="-60" y="-80" width="120" height="60" rx="8" fill="url(#wrenchGrad)"/>
+      </g>
+
+      <!-- Wrench head (box-end) bottom -->
+      <g transform="translate(0, 130)">
+        <ellipse cx="0" cy="40" rx="65" ry="65" fill="url(#wrenchGrad)"/>
+        <circle cx="0" cy="40" r="30" fill="url(#bg)"/>
+      </g>
+
+      <!-- Metallic highlight on shaft -->
+      <rect x="-10" y="-200" width="12" height="300" rx="6" fill="white" opacity="0.15"/>
+    </g>
+  </g>
+</svg>
