@@ -4,6 +4,7 @@ import SwiftData
 struct SettingsView: View {
     @Query private var settingsArray: [UserSettings]
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var auth: AuthService
     @EnvironmentObject private var stravaAuth: StravaAuthService
     @EnvironmentObject private var storeKit: StoreKitService
 
@@ -78,6 +79,27 @@ struct SettingsView: View {
                     LabeledContent("Version", value: "1.0.0")
                     LabeledContent("Build", value: "1")
                 }
+
+                // Account section
+                Section("Account") {
+                    if let email = auth.userEmail {
+                        LabeledContent("Signed in as", value: email)
+                    }
+                    Button(role: .destructive) {
+                        Task { await auth.signOut() }
+                    } label: {
+                        Text("Sign Out")
+                    }
+                }
+
+                #if DEBUG
+                Section("Debug") {
+                    Toggle("Premium Override", isOn: Binding(
+                        get: { storeKit.isPremium },
+                        set: { storeKit.isPremium = $0 }
+                    ))
+                }
+                #endif
             }
             .navigationTitle("Settings")
         }

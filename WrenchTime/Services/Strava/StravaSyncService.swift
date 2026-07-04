@@ -1,10 +1,12 @@
 import Foundation
 import SwiftData
+import Observation
 
 @MainActor
-class StravaSyncService: ObservableObject {
-    @Published var isSyncing = false
-    @Published var lastError: String?
+@Observable
+class StravaSyncService {
+    var isSyncing = false
+    var lastError: String?
 
     private let apiClient: StravaAPIClient
     private let notificationService: NotificationService
@@ -24,9 +26,40 @@ class StravaSyncService: ObservableObject {
 
         do {
             let athlete = try await apiClient.getAthlete()
+            print("[WrenchTime Sync] Athlete ID: \(athlete.id), bikes count: \(athlete.bikes.count)")
+            for bike in athlete.bikes {
+                print("[WrenchTime Sync] Bike: id=\(bike.id) name=\(bike.name) distance=\(bike.distance)")
+            }
 
-            for gearSummary in athlete.bikes {
-                try await syncSingleBike(gearSummary: gearSummary, modelContext: modelContext)
+            // Fetch gear details in parallel, then apply to SwiftData sequentially
+            let bikeList = athlete.bikes
+            let gearDetails = try await withThrowingTaskGroup(of: (StravaGearSummary, StravaGear?).self) { group in
+                for gearSummary in bikeList {
+                    let gearId = gearSummary.id
+                    var descriptor = FetchDescriptor<Bike>(
+                        predicate: #Predicate { $0.stravaGearId == gearId }
+                    )
+                    descriptor.fetchLimit = 1
+                    let isNew = (try? modelContext.fetch(descriptor).isEmpty) ?? true
+
+                    group.addTask {
+                        if isNew {
+                            let detail = try await self.apiClient.getGear(id: gearSummary.id)
+                            return (gearSummary, detail)
+                        }
+                        return (gearSummary, nil)
+                    }
+                }
+
+                var results: [(StravaGearSummary, StravaGear?)] = []
+                for try await result in group {
+                    results.append(result)
+                }
+                return results
+            }
+
+            for (gearSummary, gearDetail) in gearDetails {
+                syncSingleBike(gearSummary: gearSummary, gearDetail: gearDetail, modelContext: modelContext)
             }
 
             // Update last sync date in settings
@@ -47,26 +80,23 @@ class StravaSyncService: ObservableObject {
         }
     }
 
-    private func syncSingleBike(gearSummary: StravaGearSummary, modelContext: ModelContext) async throws {
-        // Check if bike already exists
+    private func syncSingleBike(gearSummary: StravaGearSummary, gearDetail: StravaGear?, modelContext: ModelContext) {
         let gearId = gearSummary.id
         var descriptor = FetchDescriptor<Bike>(
             predicate: #Predicate { $0.stravaGearId == gearId }
         )
         descriptor.fetchLimit = 1
 
-        let existingBikes = try modelContext.fetch(descriptor)
+        let existingBikes = try? modelContext.fetch(descriptor)
 
-        if let existingBike = existingBikes.first {
-            // Update existing bike
+        if let existingBike = existingBikes?.first {
             let previousDistance = existingBike.totalDistanceMeters
             let newDistance = gearSummary.distance
 
-            if newDistance > previousDistance {
-                existingBike.totalDistanceMeters = newDistance
-                existingBike.lastSyncDate = Date()
+            existingBike.totalDistanceMeters = newDistance
+            existingBike.lastSyncDate = Date()
 
-                // Log sync delta
+            if newDistance != previousDistance {
                 let syncLog = RideSync(
                     bikeStravaGearId: gearId,
                     previousDistanceMeters: previousDistance,
@@ -74,10 +104,34 @@ class StravaSyncService: ObservableObject {
                 )
                 modelContext.insert(syncLog)
             }
-        } else {
-            // New bike — fetch full details
-            let gearDetail = try await apiClient.getGear(id: gearId)
 
+            // Reconcile component mileage with maintenance history
+            let bikeId = existingBike.id
+            let componentDescriptor = FetchDescriptor<Component>(
+                predicate: #Predicate { $0.bike?.id == bikeId }
+            )
+            let maintenanceDescriptor = FetchDescriptor<MaintenanceRecord>(
+                predicate: #Predicate { $0.bike?.id == bikeId }
+            )
+            if let components = try? modelContext.fetch(componentDescriptor),
+               let maintenanceRecords = try? modelContext.fetch(maintenanceDescriptor) {
+                for component in components {
+                    let componentRecords = maintenanceRecords
+                        .filter { $0.componentType == component.type }
+                        .sorted { $0.date > $1.date }
+
+                    if let lastRecord = componentRecords.first {
+                        // Has maintenance — align with the most recent replacement
+                        component.distanceAtInstall = lastRecord.distanceAtReplacement
+                        component.installedDate = lastRecord.date
+                    } else {
+                        // No maintenance — component has been on since the start
+                        component.distanceAtInstall = 0
+                        component.installedDate = existingBike.dateAdded
+                    }
+                }
+            }
+        } else if let gearDetail {
             let bike = Bike(
                 name: gearDetail.name,
                 brandName: gearDetail.brandName ?? "",
@@ -89,11 +143,11 @@ class StravaSyncService: ObservableObject {
             bike.lastSyncDate = Date()
             modelContext.insert(bike)
 
-            // Add default components
             for componentType in ComponentType.defaultBikeComponents {
                 let component = Component(
                     type: componentType,
-                    distanceAtInstall: gearDetail.distance
+                    distanceAtInstall: 0,
+                    replacementThresholdMiles: componentType.defaultThresholdMiles(brakeType: bike.brakeType)
                 )
                 component.bike = bike
                 modelContext.insert(component)

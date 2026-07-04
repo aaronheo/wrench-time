@@ -2,15 +2,31 @@ import Foundation
 import AuthenticationServices
 
 @MainActor
-class StravaAuthService: ObservableObject {
+class StravaAuthService: NSObject, ObservableObject, ASWebAuthenticationPresentationContextProviding {
     @Published var isAuthenticated = false
     @Published var isLoading = false
     @Published var athleteName: String?
 
     private let keychain = KeychainService.shared
+    private var authSession: ASWebAuthenticationSession?
 
-    init() {
-        isAuthenticated = keychain.loadString(key: Constants.Keychain.stravaAccessToken) != nil
+    nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        // This delegate method is always called on the main thread by the system
+        let scenes = UIApplication.shared.connectedScenes
+        for scene in scenes {
+            if let windowScene = scene as? UIWindowScene,
+               let window = windowScene.windows.first(where: { $0.isKeyWindow }) {
+                return window
+            }
+        }
+        return ASPresentationAnchor()
+    }
+
+    override init() {
+        let keychain = KeychainService.shared
+        let authenticated = keychain.loadString(key: Constants.Keychain.stravaAccessToken) != nil
+        super.init()
+        self.isAuthenticated = authenticated
     }
 
     // MARK: - Authorization URL
@@ -21,7 +37,7 @@ class StravaAuthService: ObservableObject {
             URLQueryItem(name: "client_id", value: Constants.Strava.clientId),
             URLQueryItem(name: "redirect_uri", value: Constants.Strava.redirectUri),
             URLQueryItem(name: "response_type", value: "code"),
-            URLQueryItem(name: "approval_prompt", value: "auto"),
+            URLQueryItem(name: "approval_prompt", value: "force"),
             URLQueryItem(name: "scope", value: Constants.Strava.scopes)
         ]
         return components.url!
@@ -37,7 +53,8 @@ class StravaAuthService: ObservableObject {
             let session = ASWebAuthenticationSession(
                 url: authorizationURL,
                 callbackURLScheme: Constants.Strava.callbackScheme
-            ) { callbackURL, error in
+            ) { [weak self] callbackURL, error in
+                self?.authSession = nil
                 if let error {
                     continuation.resume(throwing: error)
                 } else if let callbackURL {
@@ -46,7 +63,9 @@ class StravaAuthService: ObservableObject {
                     continuation.resume(throwing: StravaAuthError.noCallback)
                 }
             }
+            session.presentationContextProvider = self
             session.prefersEphemeralWebBrowserSession = false
+            self.authSession = session
             session.start()
         }
 
@@ -56,6 +75,7 @@ class StravaAuthService: ObservableObject {
 
         let tokenResponse = try await exchangeCodeForToken(code: code)
         storeTokens(tokenResponse)
+        print("[WrenchTime] ACCESS TOKEN: \(tokenResponse.accessToken)")
         isAuthenticated = true
         athleteName = [tokenResponse.athlete?.firstname, tokenResponse.athlete?.lastname]
             .compactMap { $0 }
@@ -133,6 +153,16 @@ class StravaAuthService: ObservableObject {
     // MARK: - Logout
 
     func disconnect() {
+        // Revoke the token with Strava so reconnecting requires fresh authorization
+        if let token = keychain.loadString(key: Constants.Keychain.stravaAccessToken) {
+            Task {
+                var request = URLRequest(url: URL(string: "https://www.strava.com/oauth/deauthorize")!)
+                request.httpMethod = "POST"
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                _ = try? await URLSession.shared.data(for: request)
+            }
+        }
+
         keychain.delete(key: Constants.Keychain.stravaAccessToken)
         keychain.delete(key: Constants.Keychain.stravaRefreshToken)
         keychain.delete(key: Constants.Keychain.stravaExpiresAt)

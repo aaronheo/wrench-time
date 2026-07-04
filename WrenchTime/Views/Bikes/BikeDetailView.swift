@@ -3,11 +3,22 @@ import SwiftData
 
 struct BikeDetailView: View {
     @Bindable var bike: Bike
+    @Query private var components: [Component]
     @Environment(\.modelContext) private var modelContext
 
     @State private var showAddComponent = false
     @State private var showLogMaintenance = false
     @State private var selectedComponent: Component?
+
+    init(bike: Bike) {
+        self._bike = .init(wrappedValue: bike)
+        let bikeId = bike.id
+        _components = Query(filter: #Predicate<Component> { $0.bike?.id == bikeId })
+    }
+
+    private var componentsByUrgency: [Component] {
+        components.sorted { $0.wearPercentage > $1.wearPercentage }
+    }
 
     var body: some View {
         List {
@@ -20,6 +31,19 @@ struct BikeDetailView: View {
                 if !bike.modelName.isEmpty {
                     LabeledContent("Model", value: bike.modelName)
                 }
+                Picker("Brakes", selection: Binding(
+                    get: { bike.brakeType },
+                    set: { newType in
+                        bike.brakeTypeRaw = newType
+                        for component in components where component.type == .brakePadsFront || component.type == .brakePadsRear {
+                            component.replacementThresholdMiles = component.type.defaultThresholdMiles(brakeType: newType)
+                        }
+                    }
+                )) {
+                    ForEach(BrakeType.allCases) { type in
+                        Text(type.displayName).tag(type)
+                    }
+                }
                 LabeledContent("Added", value: bike.dateAdded.shortFormatted)
                 if let lastSync = bike.lastSyncDate {
                     LabeledContent("Last Sync", value: lastSync.relativeDescription)
@@ -28,11 +52,11 @@ struct BikeDetailView: View {
 
             // Components section
             Section {
-                if bike.components.isEmpty {
+                if components.isEmpty {
                     Text("No components tracked")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(bike.componentsByUrgency) { component in
+                    ForEach(componentsByUrgency) { component in
                         ComponentRow(component: component)
                             .contentShape(Rectangle())
                             .onTapGesture {
@@ -93,9 +117,8 @@ struct BikeDetailView: View {
     }
 
     private func deleteComponents(at offsets: IndexSet) {
-        let sorted = bike.componentsByUrgency
         for index in offsets {
-            modelContext.delete(sorted[index])
+            modelContext.delete(componentsByUrgency[index])
         }
     }
 }
@@ -120,7 +143,7 @@ private struct AddComponentSheet: View {
                     }
                 }
                 .onChange(of: selectedType) { _, newType in
-                    thresholdMiles = newType.defaultThresholdMiles
+                    thresholdMiles = newType.defaultThresholdMiles(brakeType: bike.brakeType)
                     customName = newType.displayName
                 }
 
@@ -159,7 +182,7 @@ private struct AddComponentSheet: View {
                 }
             }
             .onAppear {
-                thresholdMiles = selectedType.defaultThresholdMiles
+                thresholdMiles = selectedType.defaultThresholdMiles(brakeType: bike.brakeType)
                 customName = selectedType.displayName
             }
         }

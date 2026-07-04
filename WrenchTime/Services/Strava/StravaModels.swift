@@ -7,12 +7,24 @@ struct StravaAthlete: Codable {
     let firstname: String?
     let lastname: String?
     let bikes: [StravaGearSummary]
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        firstname = try container.decodeIfPresent(String.self, forKey: .firstname)
+        lastname = try container.decodeIfPresent(String.self, forKey: .lastname)
+        bikes = try container.decodeIfPresent([StravaGearSummary].self, forKey: .bikes) ?? []
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, firstname, lastname, bikes
+    }
 }
 
 struct StravaGearSummary: Codable, Identifiable {
     let id: String
     let name: String
-    let primary: Bool
+    let primary: Bool?
     let distance: Double  // meters
 }
 
@@ -31,13 +43,33 @@ struct StravaGear: Codable {
     }
 }
 
+// MARK: - Activity Summary (for distance calculations)
+
+struct StravaActivitySummary: Codable {
+    let id: Int
+    let type: String
+    let distance: Double  // meters
+    let gearId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, type, distance
+        case gearId = "gear_id"
+    }
+}
+
 // MARK: - Token Response
+
+struct StravaTokenAthlete: Codable {
+    let id: Int
+    let firstname: String?
+    let lastname: String?
+}
 
 struct StravaTokenResponse: Codable {
     let accessToken: String
     let refreshToken: String
     let expiresAt: Int
-    let athlete: StravaAthlete?
+    let athlete: StravaTokenAthlete?
 
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"

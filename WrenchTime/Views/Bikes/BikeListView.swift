@@ -2,16 +2,22 @@ import SwiftUI
 import SwiftData
 
 struct BikeListView: View {
-    @Query(sort: \Bike.isPrimary, order: .reverse) private var bikes: [Bike]
+    @Query(sort: \Bike.name) private var bikes: [Bike]
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var storeKit: StoreKitService
 
     @State private var showAddBike = false
+    @State private var showUpgradeAlert = false
+    @State private var showUpgradeSheet = false
+
+    private var sortedBikes: [Bike] {
+        bikes.sorted { $0.isPrimary && !$1.isPrimary }
+    }
 
     var body: some View {
         NavigationStack {
             Group {
-                if bikes.isEmpty {
+                if sortedBikes.isEmpty {
                     EmptyStateView(
                         icon: "bicycle",
                         title: "No Bikes",
@@ -21,7 +27,7 @@ struct BikeListView: View {
                     )
                 } else {
                     List {
-                        ForEach(bikes) { bike in
+                        ForEach(sortedBikes) { bike in
                             NavigationLink(value: bike) {
                                 BikeRowView(bike: bike)
                             }
@@ -37,15 +43,36 @@ struct BikeListView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        showAddBike = true
+                        if canAddBike {
+                            showAddBike = true
+                        } else {
+                            showUpgradeAlert = true
+                        }
                     } label: {
                         Image(systemName: "plus")
                     }
-                    .disabled(!canAddBike)
                 }
             }
             .sheet(isPresented: $showAddBike) {
                 AddBikeView()
+            }
+            .alert("Premium Required", isPresented: $showUpgradeAlert) {
+                Button("Upgrade") {
+                    showUpgradeSheet = true
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Free accounts are limited to 1 bike. Upgrade to Premium to track unlimited bikes.")
+            }
+            .sheet(isPresented: $showUpgradeSheet) {
+                NavigationStack {
+                    PremiumUpgradeView()
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Close") { showUpgradeSheet = false }
+                            }
+                        }
+                }
             }
         }
     }

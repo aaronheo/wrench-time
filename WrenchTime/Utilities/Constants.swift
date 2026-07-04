@@ -4,14 +4,28 @@ enum Constants {
     // MARK: - Strava API
     enum Strava {
         /// Register your app at https://www.strava.com/settings/api
-        static let clientId = "YOUR_STRAVA_CLIENT_ID"
-        static let clientSecret = "YOUR_STRAVA_CLIENT_SECRET"
+        static let clientId = "213185"
+        static let clientSecret = "b2e8028e99d797f8e80ea249b4098364e1ab1820"
         static let redirectUri = "wrenchtime://strava-callback"
         static let callbackScheme = "wrenchtime"
         static let baseURL = "https://www.strava.com/api/v3"
         static let authURL = "https://www.strava.com/oauth/mobile/authorize"
         static let tokenURL = "https://www.strava.com/oauth/token"
-        static let scopes = "read,activity:read_all"
+        static let scopes = "read,profile:read_all,activity:read_all,activity:write"
+    }
+
+    // MARK: - Supabase
+    enum Supabase {
+        static let url = "https://vsrdpobeockdyfwjkloi.supabase.co"
+        /// Publishable "anon" key — safe to ship in the client; access is gated by auth + RLS.
+        static let anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzcmRwb2Jlb2NrZHlmd2prbG9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNzM4MzAsImV4cCI6MjA5ODc0OTgzMH0.1KHOIQPtXRiqIvsVO5Zc7sucrSBJ8_ffsSfdO6-tEhA"
+        /// OAuth callback for the Google web flow. Must be listed in Supabase → Authentication → URL Configuration → Redirect URLs.
+        static let redirectURL = "wrenchtime://login-callback"
+    }
+
+    // MARK: - Backend API
+    enum API {
+        static let baseURL = "https://wrench-time-api.onrender.com"
     }
 
     // MARK: - Keychain Keys

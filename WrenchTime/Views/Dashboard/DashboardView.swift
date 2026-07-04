@@ -2,16 +2,20 @@ import SwiftUI
 import SwiftData
 
 struct DashboardView: View {
-    @Query(sort: \Bike.isPrimary, order: .reverse) private var bikes: [Bike]
+    @Query(sort: \Bike.name) private var bikes: [Bike]
     @EnvironmentObject private var stravaAuth: StravaAuthService
     @Environment(\.modelContext) private var modelContext
 
     @State private var syncService: StravaSyncService?
 
+    private var sortedBikes: [Bike] {
+        bikes.sorted { $0.isPrimary && !$1.isPrimary }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                if bikes.isEmpty {
+                if sortedBikes.isEmpty {
                     EmptyStateView(
                         icon: "bicycle",
                         title: "Welcome to WrenchTime",
@@ -21,7 +25,7 @@ struct DashboardView: View {
                 } else {
                     LazyVStack(spacing: 16) {
                         // Mileage summary cards
-                        ForEach(bikes) { bike in
+                        ForEach(sortedBikes) { bike in
                             MileageSummaryCard(bike: bike)
                         }
 
@@ -74,7 +78,7 @@ struct DashboardView: View {
     }
 
     private var allAlerts: [BikeAlert] {
-        bikes.flatMap { bike in
+        sortedBikes.flatMap { bike in
             bike.componentsByUrgency
                 .filter { $0.isApproaching || $0.isDue }
                 .map { BikeAlert(bike: bike, component: $0) }

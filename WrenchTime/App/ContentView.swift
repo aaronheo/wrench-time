@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject private var stravaAuth: StravaAuthService
+    @Environment(\.modelContext) private var modelContext
+
     var body: some View {
         TabView {
             DashboardView()
@@ -24,6 +27,12 @@ struct ContentView: View {
                 }
         }
         .tint(.orange)
+        .task {
+            guard stravaAuth.isAuthenticated else { return }
+            let apiClient = StravaAPIClient(authService: stravaAuth)
+            let syncService = StravaSyncService(apiClient: apiClient)
+            await syncService.syncBikes(modelContext: modelContext)
+        }
     }
 }
 

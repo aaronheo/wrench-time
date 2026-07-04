@@ -1,5 +1,19 @@
 import Foundation
 
+enum BrakeType: String, Codable, CaseIterable, Identifiable {
+    case disc
+    case rim
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .disc: return "Disc"
+        case .rim:  return "Rim"
+        }
+    }
+}
+
 enum ComponentType: String, Codable, CaseIterable, Identifiable {
     case chain
     case frontTire
@@ -13,13 +27,22 @@ enum ComponentType: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Default threshold ignoring brake type (uses disc defaults for brake pads)
     var defaultThresholdMiles: Double {
+        defaultThresholdMiles(brakeType: .disc)
+    }
+
+    /// Default threshold accounting for brake type
+    func defaultThresholdMiles(brakeType: BrakeType) -> Double {
         switch self {
         case .chain:           return 2000
         case .frontTire:       return 3000
         case .rearTire:        return 2500
-        case .brakePadsFront:  return 1500
-        case .brakePadsRear:   return 1500
+        case .brakePadsFront, .brakePadsRear:
+            switch brakeType {
+            case .disc: return 1000
+            case .rim:  return 3000
+            }
         case .cassette:        return 6000
         case .cables:          return 4000
         case .barTape:         return 3000

@@ -21,7 +21,9 @@ class StoreKitService: ObservableObject {
         do {
             let storeProducts = try await Product.products(for: productIds)
             products = storeProducts.sorted { $0.price < $1.price }
+            print("[StoreKit] Loaded \(products.count) products: \(products.map { $0.id })")
         } catch {
+            print("[StoreKit] Failed to load products: \(error)")
             products = []
         }
     }

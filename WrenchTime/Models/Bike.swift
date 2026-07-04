@@ -8,6 +8,7 @@ final class Bike {
     var brandName: String
     var modelName: String
     var stravaGearId: String?
+    var brakeTypeRaw: BrakeType?
     var totalDistanceMeters: Double
     var isPrimary: Bool
     var dateAdded: Date
@@ -18,6 +19,11 @@ final class Bike {
 
     @Relationship(deleteRule: .cascade, inverse: \MaintenanceRecord.bike)
     var maintenanceRecords: [MaintenanceRecord] = []
+
+    var brakeType: BrakeType {
+        get { brakeTypeRaw ?? .disc }
+        set { brakeTypeRaw = newValue }
+    }
 
     var totalDistanceMiles: Double {
         totalDistanceMeters / 1609.34
@@ -43,6 +49,7 @@ final class Bike {
         brandName: String = "",
         modelName: String = "",
         stravaGearId: String? = nil,
+        brakeType: BrakeType = .disc,
         totalDistanceMeters: Double = 0,
         isPrimary: Bool = false
     ) {
@@ -51,6 +58,7 @@ final class Bike {
         self.brandName = brandName
         self.modelName = modelName
         self.stravaGearId = stravaGearId
+        self.brakeTypeRaw = brakeType
         self.totalDistanceMeters = totalDistanceMeters
         self.isPrimary = isPrimary
         self.dateAdded = Date()

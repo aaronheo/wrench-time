@@ -9,6 +9,7 @@ struct AddBikeView: View {
     @State private var brandName = ""
     @State private var modelName = ""
     @State private var isPrimary = false
+    @State private var brakeType: BrakeType = .disc
     @State private var addDefaultComponents = true
 
     var body: some View {
@@ -19,6 +20,15 @@ struct AddBikeView: View {
                     TextField("Brand (optional)", text: $brandName)
                     TextField("Model (optional)", text: $modelName)
                     Toggle("Primary Bike", isOn: $isPrimary)
+                }
+
+                Section("Brake Type") {
+                    Picker("Brakes", selection: $brakeType) {
+                        ForEach(BrakeType.allCases) { type in
+                            Text(type.displayName).tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                 }
 
                 Section {
@@ -48,13 +58,17 @@ struct AddBikeView: View {
             name: name.trimmingCharacters(in: .whitespaces),
             brandName: brandName.trimmingCharacters(in: .whitespaces),
             modelName: modelName.trimmingCharacters(in: .whitespaces),
+            brakeType: brakeType,
             isPrimary: isPrimary
         )
         modelContext.insert(bike)
 
         if addDefaultComponents {
             for componentType in ComponentType.defaultBikeComponents {
-                let component = Component(type: componentType)
+                let component = Component(
+                    type: componentType,
+                    replacementThresholdMiles: componentType.defaultThresholdMiles(brakeType: brakeType)
+                )
                 component.bike = bike
                 modelContext.insert(component)
             }
