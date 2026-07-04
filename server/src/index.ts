@@ -9,6 +9,7 @@ import { componentsRouter } from './routes/components.js';
 import { maintenanceRouter } from './routes/maintenance.js';
 import { ridesRouter } from './routes/rides.js';
 import { settingsRouter } from './routes/settings.js';
+import { syncRouter } from './routes/sync.js';
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/components', componentsRouter);
 app.use('/api/maintenance', maintenanceRouter);
 app.use('/api/rides', ridesRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/sync', syncRouter);
 
 app.use(errorHandler);
 
