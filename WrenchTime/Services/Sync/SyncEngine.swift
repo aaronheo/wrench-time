@@ -18,6 +18,8 @@ final class SyncEngine: ObservableObject {
 
     private var didInitialPull = false
     private var isApplyingRemote = false
+    /// Local edits have been made that haven't reached the server yet.
+    private var pendingPush = false
     private var pushTask: Task<Void, Never>?
     private var saveObserver: NSObjectProtocol?
 
@@ -46,6 +48,7 @@ final class SyncEngine: ObservableObject {
     func handleSignOut() {
         pushTask?.cancel()
         didInitialPull = false
+        pendingPush = false
         if let saveObserver {
             NotificationCenter.default.removeObserver(saveObserver)
             self.saveObserver = nil
@@ -56,17 +59,35 @@ final class SyncEngine: ObservableObject {
 
     // MARK: - Pull (server → local)
 
+    /// Pull the server's dataset into the local cache (server wins). If there are
+    /// un-pushed local edits, flush them first so a pull can never delete a
+    /// locally-added item that hasn't synced to the server yet.
     func pullFromServer() async {
         guard !isSyncing else { return }
         isSyncing = true
         defer { isSyncing = false }
+
+        if pendingPush {
+            await performPush()
+        } else {
+            await performPull()
+        }
+    }
+
+    private func performPull() async {
         do {
             let snapshot = try await api.getSync()
+            // A local edit landed while the request was in flight — don't clobber it.
+            if pendingPush {
+                await performPush()
+                return
+            }
             if snapshot.bikes.isEmpty, localHasData() {
                 // First sign-in with pre-existing local data: adopt it onto the server
                 // instead of wiping it.
                 didInitialPull = true
-                await pushToServer()
+                pendingPush = true
+                await performPush()
             } else {
                 applyRemote(snapshot)
                 didInitialPull = true
@@ -81,20 +102,34 @@ final class SyncEngine: ObservableObject {
 
     private func schedulePush() {
         guard didInitialPull, !isApplyingRemote else { return }
+        pendingPush = true
         pushTask?.cancel()
         pushTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 1_200_000_000) // ~1.2s debounce
             guard !Task.isCancelled else { return }
-            await self?.pushToServer()
+            await self?.runPush()
         }
     }
 
-    func pushToServer() async {
+    /// Debounced-push entry point. If another sync op holds the lock, skip — the
+    /// pending flag stays set so the next pull/push flushes it.
+    func runPush() async {
+        guard !isSyncing else { return }
+        isSyncing = true
+        defer { isSyncing = false }
+        await performPush()
+    }
+
+    private func performPush() async {
         guard didInitialPull else { return }
         do {
             let snapshot = try gatherLocalSnapshot()
-            guard !snapshot.bikes.isEmpty else { return } // never wipe the server with an empty push
+            guard !snapshot.bikes.isEmpty else {
+                pendingPush = false
+                return // never wipe the server with an empty push
+            }
             try await api.postSync(snapshot)
+            pendingPush = false
             lastSyncedAt = Date()
         } catch {
             lastError = error.localizedDescription

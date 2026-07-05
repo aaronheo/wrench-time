@@ -8,13 +8,13 @@ struct SettingsView: View {
     @EnvironmentObject private var stravaAuth: StravaAuthService
     @EnvironmentObject private var storeKit: StoreKitService
 
-    private var settings: UserSettings {
-        if let existing = settingsArray.first {
-            return existing
+    private var settings: UserSettings? { settingsArray.first }
+
+    /// Create the singleton settings row once, off the view-body path.
+    private func ensureSettings() {
+        if settingsArray.isEmpty {
+            modelContext.insert(UserSettings())
         }
-        let newSettings = UserSettings()
-        modelContext.insert(newSettings)
-        return newSettings
     }
 
     var body: some View {
@@ -39,20 +39,22 @@ struct SettingsView: View {
                 }
 
                 // Preferences section
-                Section("Preferences") {
-                    Picker("Distance Unit", selection: Bindable(settings).distanceUnit) {
-                        Text("Miles").tag(DistanceUnit.miles)
-                        Text("Kilometers").tag(DistanceUnit.kilometers)
-                    }
+                if let settings = settings {
+                    Section("Preferences") {
+                        Picker("Distance Unit", selection: Bindable(settings).distanceUnit) {
+                            Text("Miles").tag(DistanceUnit.miles)
+                            Text("Kilometers").tag(DistanceUnit.kilometers)
+                        }
 
-                    Toggle("Notifications", isOn: Bindable(settings).notificationsEnabled)
-                        .onChange(of: settings.notificationsEnabled) { _, enabled in
-                            if enabled {
-                                Task {
-                                    let _ = await NotificationService().requestPermission()
+                        Toggle("Notifications", isOn: Bindable(settings).notificationsEnabled)
+                            .onChange(of: settings.notificationsEnabled) { _, enabled in
+                                if enabled {
+                                    Task {
+                                        let _ = await NotificationService().requestPermission()
+                                    }
                                 }
                             }
-                        }
+                    }
                 }
 
                 // Premium section
@@ -102,6 +104,7 @@ struct SettingsView: View {
                 #endif
             }
             .navigationTitle("Settings")
+            .task { ensureSettings() }
         }
     }
 }

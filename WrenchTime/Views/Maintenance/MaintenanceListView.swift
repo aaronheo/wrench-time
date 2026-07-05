@@ -52,6 +52,7 @@ struct MaintenanceListView: View {
 
     /// If the deleted record is the most recent replacement for that component,
     /// recalculate the component's install distance using Strava data.
+    @MainActor
     private func rollBackComponent(for record: MaintenanceRecord) async {
         guard let bike = record.bike else { return }
 

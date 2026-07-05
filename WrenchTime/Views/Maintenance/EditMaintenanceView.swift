@@ -63,6 +63,7 @@ struct EditMaintenanceView: View {
         }
     }
 
+    @MainActor
     private func saveChanges() async {
         isSaving = true
         defer { isSaving = false }

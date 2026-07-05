@@ -21,7 +21,8 @@ app.use(
         : env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()),
   }),
 );
-app.use(express.json());
+// Sync payloads carry the user's whole dataset; allow a generous but bounded body.
+app.use(express.json({ limit: '2mb' }));
 
 // Public health check for Render.
 app.get('/health', (_req, res) => {

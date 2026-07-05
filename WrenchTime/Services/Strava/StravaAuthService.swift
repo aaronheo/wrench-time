@@ -75,7 +75,6 @@ class StravaAuthService: NSObject, ObservableObject, ASWebAuthenticationPresenta
 
         let tokenResponse = try await exchangeCodeForToken(code: code)
         storeTokens(tokenResponse)
-        print("[WrenchTime] ACCESS TOKEN: \(tokenResponse.accessToken)")
         isAuthenticated = true
         athleteName = [tokenResponse.athlete?.firstname, tokenResponse.athlete?.lastname]
             .compactMap { $0 }
@@ -121,6 +120,11 @@ class StravaAuthService: NSObject, ObservableObject, ASWebAuthenticationPresenta
         }
 
         return try await refreshToken()
+    }
+
+    /// Force a token refresh regardless of the cached expiry — used to recover from a 401.
+    func forceRefreshAccessToken() async throws -> String {
+        try await refreshToken()
     }
 
     private func refreshToken() async throws -> String {

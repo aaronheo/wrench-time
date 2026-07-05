@@ -8,6 +8,10 @@ export const pool = new pg.Pool({
   ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30_000,
+  // Fail fast instead of queueing forever when the pool is saturated, and cap
+  // any single query so a hung statement can't hold a connection indefinitely.
+  connectionTimeoutMillis: 10_000,
+  statement_timeout: 15_000,
 });
 
 /** Run a parameterized query and return typed rows. */

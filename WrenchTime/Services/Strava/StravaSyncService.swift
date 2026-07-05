@@ -121,14 +121,13 @@ class StravaSyncService {
                         .sorted { $0.date > $1.date }
 
                     if let lastRecord = componentRecords.first {
-                        // Has maintenance — align with the most recent replacement
+                        // Has maintenance — align with the most recent replacement.
                         component.distanceAtInstall = lastRecord.distanceAtReplacement
                         component.installedDate = lastRecord.date
-                    } else {
-                        // No maintenance — component has been on since the start
-                        component.distanceAtInstall = 0
-                        component.installedDate = existingBike.dateAdded
                     }
+                    // No maintenance record: leave the component's existing install
+                    // baseline untouched — it may have been added mid-life at the bike's
+                    // current mileage, and resetting to 0 would falsely max out its wear.
                 }
             }
         } else if let gearDetail {

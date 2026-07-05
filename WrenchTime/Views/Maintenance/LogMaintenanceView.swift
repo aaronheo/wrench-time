@@ -67,6 +67,7 @@ struct LogMaintenanceView: View {
         }
     }
 
+    @MainActor
     private func logMaintenance() async {
         isSaving = true
         defer { isSaving = false }

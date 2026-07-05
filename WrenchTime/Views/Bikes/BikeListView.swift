@@ -82,8 +82,10 @@ struct BikeListView: View {
     }
 
     private func deleteBikes(at offsets: IndexSet) {
+        // Offsets index into `sortedBikes` (what the ForEach renders), not the
+        // differently-ordered `@Query` array.
         for index in offsets {
-            modelContext.delete(bikes[index])
+            modelContext.delete(sortedBikes[index])
         }
     }
 }

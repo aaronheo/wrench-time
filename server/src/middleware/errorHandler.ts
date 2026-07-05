@@ -36,6 +36,26 @@ export function errorHandler(
     res.status(400).json({ error: 'Validation failed', details: err.issues });
     return;
   }
+  if (err && typeof err === 'object') {
+    // Errors that carry an HTTP status (body-parser: malformed JSON -> 400,
+    // payload too large -> 413).
+    const carried =
+      (err as { status?: unknown }).status ?? (err as { statusCode?: unknown }).statusCode;
+    if (typeof carried === 'number' && carried >= 400 && carried < 500) {
+      res.status(carried).json({ error: (err as { message?: string }).message ?? 'Request error' });
+      return;
+    }
+    // Postgres error codes: invalid UUID in a path param, unique violation.
+    const code = (err as { code?: unknown }).code;
+    if (code === '22P02') {
+      res.status(400).json({ error: 'Invalid identifier.' });
+      return;
+    }
+    if (code === '23505') {
+      res.status(409).json({ error: 'Conflict: duplicate id.' });
+      return;
+    }
+  }
   console.error('[wrench-time-api]', err);
   res.status(500).json({ error: 'Internal server error' });
 }

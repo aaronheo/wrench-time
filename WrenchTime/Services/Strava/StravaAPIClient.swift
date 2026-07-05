@@ -16,15 +16,7 @@ actor StravaAPIClient {
 
     func getAthlete() async throws -> StravaAthlete {
         let data = try await authenticatedRequest(path: "/athlete")
-        do {
-            return try decoder.decode(StravaAthlete.self, from: data)
-        } catch {
-            print("[WrenchTime API] Failed to decode athlete: \(error)")
-            if let json = String(data: data, encoding: .utf8) {
-                print("[WrenchTime API] Raw response: \(json.prefix(2000))")
-            }
-            throw error
-        }
+        return try decoder.decode(StravaAthlete.self, from: data)
     }
 
     // MARK: - Gear Detail
@@ -81,8 +73,8 @@ actor StravaAPIClient {
         case 200...299:
             return data
         case 401:
-            // Token expired, try refresh and retry once
-            let newToken = try await authService.getValidAccessToken()
+            // Token rejected — force a refresh (the cached token is what just failed) and retry once.
+            let newToken = try await authService.forceRefreshAccessToken()
             var retryRequest = request
             retryRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
             let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
