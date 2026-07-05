@@ -34,6 +34,8 @@ const snapshot = z.object({
       brakeType: z.enum(['disc', 'rim']).default('disc'),
       totalDistanceMeters: z.number().default(0),
       isPrimary: z.boolean().default(false),
+      isWaxedChain: z.boolean().default(false),
+      lastWaxedAtMeters: z.number().default(0),
       dateAdded: z.string().datetime().optional(),
       lastSyncDate: z.string().datetime().nullable().optional(),
     }),
@@ -106,11 +108,13 @@ syncRouter.post(
         await client.query(
           `insert into bikes
              (id, user_id, name, brand_name, model_name, strava_gear_id, brake_type,
-              total_distance_meters, is_primary, date_added, last_sync_date)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9, coalesce($10, now()), $11)`,
+              total_distance_meters, is_primary, is_waxed_chain, last_waxed_at_meters,
+              date_added, last_sync_date)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, coalesce($12, now()), $13)`,
           [
             b.id, req.userId, b.name, b.brandName, b.modelName, b.stravaGearId ?? null,
-            b.brakeType, b.totalDistanceMeters, b.isPrimary, b.dateAdded ?? null, b.lastSyncDate ?? null,
+            b.brakeType, b.totalDistanceMeters, b.isPrimary, b.isWaxedChain, b.lastWaxedAtMeters,
+            b.dateAdded ?? null, b.lastSyncDate ?? null,
           ],
         );
       }

@@ -40,7 +40,7 @@ enum ComponentType: String, Codable, CaseIterable, Identifiable {
         case .rearTire:        return 2500
         case .brakePadsFront, .brakePadsRear:
             switch brakeType {
-            case .disc: return 1000
+            case .disc: return 2000
             case .rim:  return 3000
             }
         case .cassette:        return 6000

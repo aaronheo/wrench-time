@@ -10,6 +10,7 @@ struct AddBikeView: View {
     @State private var modelName = ""
     @State private var isPrimary = false
     @State private var brakeType: BrakeType = .disc
+    @State private var isWaxedChain = false
     @State private var addDefaultComponents = true
 
     var body: some View {
@@ -29,6 +30,12 @@ struct AddBikeView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                }
+
+                Section {
+                    Toggle("Waxed Chain", isOn: $isWaxedChain)
+                } footer: {
+                    Text("Waxed chains need rewaxing about every \(Int(Constants.Chain.rewaxIntervalMiles)) miles — we'll track it for you.")
                 }
 
                 Section {
@@ -59,7 +66,8 @@ struct AddBikeView: View {
             brandName: brandName.trimmingCharacters(in: .whitespaces),
             modelName: modelName.trimmingCharacters(in: .whitespaces),
             brakeType: brakeType,
-            isPrimary: isPrimary
+            isPrimary: isPrimary,
+            isWaxedChain: isWaxedChain
         )
         modelContext.insert(bike)
 

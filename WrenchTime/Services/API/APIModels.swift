@@ -11,6 +11,8 @@ struct BikeDTO: Codable, Identifiable {
     let brakeType: String
     let totalDistanceMeters: Double
     let isPrimary: Bool
+    let isWaxedChain: Bool
+    let lastWaxedAtMeters: Double
     let dateAdded: Date
     let lastSyncDate: Date?
 }
@@ -47,6 +49,8 @@ struct BikeDetailDTO: Codable, Identifiable {
     let brakeType: String
     let totalDistanceMeters: Double
     let isPrimary: Bool
+    let isWaxedChain: Bool
+    let lastWaxedAtMeters: Double
     let dateAdded: Date
     let lastSyncDate: Date?
     let components: [ComponentDTO]
@@ -85,6 +89,8 @@ struct BikeCreate: Encodable {
     var brakeType: String
     var totalDistanceMeters: Double
     var isPrimary: Bool
+    var isWaxedChain: Bool
+    var lastWaxedAtMeters: Double
     var dateAdded: Date?
     var lastSyncDate: Date?
 }
@@ -97,6 +103,8 @@ struct BikePatch: Encodable {
     var brakeType: String?
     var totalDistanceMeters: Double?
     var isPrimary: Bool?
+    var isWaxedChain: Bool?
+    var lastWaxedAtMeters: Double?
     var lastSyncDate: Date?
 }
 
@@ -175,6 +183,10 @@ struct SyncBike: Codable {
     var brakeType: String
     var totalDistanceMeters: Double
     var isPrimary: Bool
+    // Optional so responses from a server that predates the waxed-chain fields
+    // still decode (treated as false / 0 when absent).
+    var isWaxedChain: Bool?
+    var lastWaxedAtMeters: Double?
     var dateAdded: Date
     var lastSyncDate: Date?
 }

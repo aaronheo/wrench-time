@@ -12,6 +12,8 @@ export const bikeCreate = z.object({
   brakeType: z.enum(['disc', 'rim']).default('disc'),
   totalDistanceMeters: z.number().nonnegative().default(0),
   isPrimary: z.boolean().default(false),
+  isWaxedChain: z.boolean().default(false),
+  lastWaxedAtMeters: z.number().nonnegative().default(0),
   dateAdded: z.string().datetime().optional(),
   lastSyncDate: z.string().datetime().nullable().optional(),
 });
@@ -25,6 +27,8 @@ export const bikeUpdate = z
     brakeType: z.enum(['disc', 'rim']),
     totalDistanceMeters: z.number().nonnegative(),
     isPrimary: z.boolean(),
+    isWaxedChain: z.boolean(),
+    lastWaxedAtMeters: z.number().nonnegative(),
     dateAdded: z.string().datetime(),
     lastSyncDate: z.string().datetime().nullable(),
   })

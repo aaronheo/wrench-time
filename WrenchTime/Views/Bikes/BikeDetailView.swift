@@ -7,7 +7,6 @@ struct BikeDetailView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var showAddComponent = false
-    @State private var showLogMaintenance = false
     @State private var selectedComponent: Component?
 
     init(bike: Bike) {
@@ -44,9 +43,50 @@ struct BikeDetailView: View {
                         Text(type.displayName).tag(type)
                     }
                 }
+                Toggle("Waxed Chain", isOn: Binding(
+                    get: { bike.isWaxedChain },
+                    set: { newValue in
+                        bike.isWaxedChain = newValue
+                        if newValue {
+                            // Turning waxing on = treat as just waxed.
+                            bike.lastWaxedAtMeters = bike.totalDistanceMeters
+                        }
+                    }
+                ))
                 LabeledContent("Added", value: bike.dateAdded.shortFormatted)
                 if let lastSync = bike.lastSyncDate {
                     LabeledContent("Last Sync", value: lastSync.relativeDescription)
+                }
+            }
+
+            // Chain wax section (only for waxed chains)
+            if bike.isWaxedChain {
+                Section("Chain Wax") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("\(Int(bike.milesSinceWax)) / \(Int(Constants.Chain.rewaxIntervalMiles)) mi since wax")
+                                .font(.subheadline)
+                            Spacer()
+                            if bike.isRewaxDue {
+                                Text("Rewax now")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.red)
+                            } else {
+                                Text("\(Int(bike.milesUntilRewax)) mi left")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        WearProgressBar(percentage: bike.waxWearPercentage, height: 6)
+                    }
+                    .padding(.vertical, 4)
+
+                    Button {
+                        bike.lastWaxedAtMeters = bike.totalDistanceMeters
+                    } label: {
+                        Label("Log Rewax", systemImage: "drop.fill")
+                    }
                 }
             }
 
@@ -61,7 +101,6 @@ struct BikeDetailView: View {
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 selectedComponent = component
-                                showLogMaintenance = true
                             }
                     }
                     .onDelete(perform: deleteComponents)
@@ -109,10 +148,8 @@ struct BikeDetailView: View {
         .sheet(isPresented: $showAddComponent) {
             AddComponentSheet(bike: bike)
         }
-        .sheet(isPresented: $showLogMaintenance) {
-            if let component = selectedComponent {
-                LogMaintenanceView(bike: bike, component: component)
-            }
+        .sheet(item: $selectedComponent) { component in
+            LogMaintenanceView(bike: bike, component: component)
         }
     }
 

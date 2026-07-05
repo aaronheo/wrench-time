@@ -10,6 +10,8 @@ export const BIKE_COLS = `
   brake_type as "brakeType",
   total_distance_meters as "totalDistanceMeters",
   is_primary as "isPrimary",
+  is_waxed_chain as "isWaxedChain",
+  last_waxed_at_meters as "lastWaxedAtMeters",
   date_added as "dateAdded",
   last_sync_date as "lastSyncDate",
   created_at as "createdAt",
@@ -74,6 +76,8 @@ export const BIKE_UPDATE_MAP: Record<string, string> = {
   brakeType: 'brake_type',
   totalDistanceMeters: 'total_distance_meters',
   isPrimary: 'is_primary',
+  isWaxedChain: 'is_waxed_chain',
+  lastWaxedAtMeters: 'last_waxed_at_meters',
   dateAdded: 'date_added',
   lastSyncDate: 'last_sync_date',
 };

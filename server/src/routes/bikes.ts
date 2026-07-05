@@ -52,9 +52,10 @@ bikesRouter.post(
     const rows = await query(
       `insert into bikes
          (id, user_id, name, brand_name, model_name, strava_gear_id, brake_type,
-          total_distance_meters, is_primary, date_added, last_sync_date)
+          total_distance_meters, is_primary, is_waxed_chain, last_waxed_at_meters,
+          date_added, last_sync_date)
        values
-         (coalesce($1, gen_random_uuid()), $2, $3, $4, $5, $6, $7, $8, $9, coalesce($10, now()), $11)
+         (coalesce($1, gen_random_uuid()), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, coalesce($12, now()), $13)
        returning ${BIKE_COLS}`,
       [
         b.id ?? null,
@@ -66,6 +67,8 @@ bikesRouter.post(
         b.brakeType,
         b.totalDistanceMeters,
         b.isPrimary,
+        b.isWaxedChain,
+        b.lastWaxedAtMeters,
         b.dateAdded ?? null,
         b.lastSyncDate ?? null,
       ],

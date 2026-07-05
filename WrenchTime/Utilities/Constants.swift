@@ -70,6 +70,12 @@ enum Constants {
         static let dueThreshold = 1.0
     }
 
+    // MARK: - Chain
+    enum Chain {
+        /// Miles between rewaxing a waxed chain.
+        static let rewaxIntervalMiles: Double = 200
+    }
+
     // MARK: - Sync
     enum Sync {
         static let minimumSyncIntervalSeconds: TimeInterval = 3600  // 1 hour

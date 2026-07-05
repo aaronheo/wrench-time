@@ -119,6 +119,8 @@ final class SyncEngine: ObservableObject {
                     brakeType: $0.brakeType.rawValue,
                     totalDistanceMeters: $0.totalDistanceMeters,
                     isPrimary: $0.isPrimary,
+                    isWaxedChain: $0.isWaxedChain,
+                    lastWaxedAtMeters: $0.lastWaxedAtMeters,
                     dateAdded: $0.dateAdded,
                     lastSyncDate: $0.lastSyncDate
                 )
@@ -182,6 +184,8 @@ final class SyncEngine: ObservableObject {
                 bike.brakeTypeRaw = BrakeType(rawValue: remote.brakeType) ?? .disc
                 bike.totalDistanceMeters = remote.totalDistanceMeters
                 bike.isPrimary = remote.isPrimary
+                bike.isWaxedChain = remote.isWaxedChain ?? false
+                bike.lastWaxedAtMeters = remote.lastWaxedAtMeters ?? 0
                 bike.dateAdded = remote.dateAdded
                 bike.lastSyncDate = remote.lastSyncDate
             }

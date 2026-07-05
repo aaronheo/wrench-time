@@ -11,6 +11,9 @@ final class Bike {
     var brakeTypeRaw: BrakeType?
     var totalDistanceMeters: Double
     var isPrimary: Bool
+    var isWaxedChain: Bool = false
+    /// The bike's odometer reading (meters) when the chain was last waxed.
+    var lastWaxedAtMeters: Double = 0
     var dateAdded: Date
     var lastSyncDate: Date?
 
@@ -27,6 +30,28 @@ final class Bike {
 
     var totalDistanceMiles: Double {
         totalDistanceMeters / 1609.34
+    }
+
+    // MARK: - Chain wax (only meaningful when isWaxedChain)
+
+    /// Miles ridden since the chain was last waxed.
+    var milesSinceWax: Double {
+        max(0, (totalDistanceMeters - lastWaxedAtMeters) / 1609.34)
+    }
+
+    /// Miles remaining until the chain should be rewaxed.
+    var milesUntilRewax: Double {
+        max(0, Constants.Chain.rewaxIntervalMiles - milesSinceWax)
+    }
+
+    /// Wear toward the next rewax, from 0.0 to 1.0.
+    var waxWearPercentage: Double {
+        min(milesSinceWax / Constants.Chain.rewaxIntervalMiles, 1.0)
+    }
+
+    /// The chain is waxed and due (or overdue) for a rewax.
+    var isRewaxDue: Bool {
+        isWaxedChain && milesSinceWax >= Constants.Chain.rewaxIntervalMiles
     }
 
     /// Components sorted by wear percentage, most worn first
@@ -51,7 +76,8 @@ final class Bike {
         stravaGearId: String? = nil,
         brakeType: BrakeType = .disc,
         totalDistanceMeters: Double = 0,
-        isPrimary: Bool = false
+        isPrimary: Bool = false,
+        isWaxedChain: Bool = false
     ) {
         self.id = UUID()
         self.name = name
@@ -61,6 +87,8 @@ final class Bike {
         self.brakeTypeRaw = brakeType
         self.totalDistanceMeters = totalDistanceMeters
         self.isPrimary = isPrimary
+        self.isWaxedChain = isWaxedChain
+        self.lastWaxedAtMeters = isWaxedChain ? totalDistanceMeters : 0
         self.dateAdded = Date()
     }
 }
